@@ -51,7 +51,6 @@
             color: #dfe4ea;
             font-size: 1.2rem;
         }
-        /* 學生列表網格 */
         #student-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -79,7 +78,6 @@
             font-size: 0.8rem;
             color: #7bed9f;
         }
-        /* 預留的大螢幕區塊 */
         .main-screen {
             display: flex;
             justify-content: center;
@@ -102,8 +100,7 @@
     <div class="dashboard-container">
         <div class="panel">
             <h2 class="panel-title">👥 等候室清單</h2>
-            <div id="student-list">
-                </div>
+            <div id="student-list"></div>
         </div>
 
         <div class="panel main-screen">
@@ -113,16 +110,14 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        const socket = io({ transports: ['websocket', 'polling'] });
         const studentListDiv = document.getElementById('student-list');
         const playerCountSpan = document.getElementById('player-count');
 
-        // 連線後立刻索取現有清單
         socket.on('connect', () => {
             socket.emit('teacher:getPlayers');
         });
 
-        // 接收伺服器廣播的玩家清單更新
         socket.on('teacher:updatePlayers', (players) => {
             studentListDiv.innerHTML = '';
             playerCountSpan.innerText = players.length;

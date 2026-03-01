@@ -107,7 +107,9 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        // 加上 transports 設定，確保在 Render 的反向代理下能穩定連線
+        const socket = io({ transports: ['websocket', 'polling'] });
+        
         const loginModal = document.getElementById('login-modal');
         const lobbyScreen = document.getElementById('lobby-screen');
         const nameInput = document.getElementById('player-name');
@@ -122,13 +124,11 @@
             if (name) {
                 socket.emit('student:login', name);
             } else {
-                // 簡單的視覺回饋代替 alert
                 nameInput.style.borderBottom = "2px solid #ff4b4b";
                 setTimeout(() => nameInput.style.borderBottom = "2px solid #c5c6c7", 1000);
             }
         }
 
-        // 登入成功，切換畫面
         socket.on('student:loginSuccess', (playerData) => {
             loginModal.style.display = 'none';
             lobbyScreen.style.display = 'block';
