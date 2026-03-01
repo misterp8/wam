@@ -5,10 +5,27 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+// 加入 CORS 與連線設定，確保在 Render 的環境下 Socket.io 不會被阻擋
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
 // 設定靜態資源目錄
 app.use(express.static(path.join(__dirname, 'public')));
+
+// 基礎路由：根目錄直接導向學生端
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'student.html'));
+});
+
+// 便捷路由：加上 /teacher 即可進入老師端
+app.get('/teacher', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'teacher.html'));
+});
 
 // 遊戲狀態儲存：記錄所有連線的玩家
 let players = {}; 
@@ -48,9 +65,8 @@ io.on('connection', (socket) => {
     });
 });
 
+// 配合 Render 動態分配的 PORT
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`遊戲伺服器已啟動於 http://localhost:${PORT}`);
-    console.log(`👨‍🏫 老師端網址: http://localhost:${PORT}/teacher.html`);
-    console.log(`👦 學生端網址: http://localhost:${PORT}/student.html`);
+    console.log(`伺服器已啟動於 Port ${PORT}`);
 });
