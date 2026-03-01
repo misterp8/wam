@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老師端 - 控場看板</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e24;
+            --accent: #ff4757;
+            --text-main: #f1f2f6;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.4);
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 20px;
+            height: calc(100vh - 120px);
+        }
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            overflow-y: auto;
+        }
+        .panel-title {
+            margin-top: 0;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            color: #dfe4ea;
+            font-size: 1.2rem;
+        }
+        /* 學生列表網格 */
+        #student-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .student-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .student-card.status-lobby {
+            border-left: 4px solid #2ed573;
+        }
+        .student-card .name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .student-card .status {
+            font-size: 0.8rem;
+            color: #7bed9f;
+        }
+        /* 預留的大螢幕區塊 */
+        .main-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #444;
+            border-radius: 15px;
+            color: #555;
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🎮 控場看板 (Teacher Dashboard)</h1>
+        <div>人數：<span id="player-count">0</span></div>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="panel">
+            <h2 class="panel-title">👥 等候室清單</h2>
+            <div id="student-list">
+                </div>
+        </div>
+
+        <div class="panel main-screen">
+            [大螢幕轉播區 / 排行榜預留區]
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const studentListDiv = document.getElementById('student-list');
+        const playerCountSpan = document.getElementById('player-count');
+
+        // 連線後立刻索取現有清單
+        socket.on('connect', () => {
+            socket.emit('teacher:getPlayers');
+        });
+
+        // 接收伺服器廣播的玩家清單更新
+        socket.on('teacher:updatePlayers', (players) => {
+            studentListDiv.innerHTML = '';
+            playerCountSpan.innerText = players.length;
+
+            players.forEach(player => {
+                const card = document.createElement('div');
+                card.className = `student-card status-${player.status.toLowerCase()}`;
+                card.innerHTML = `
+                    <div class="name">${player.name}</div>
+                    <div class="status">${player.status === 'LOBBY' ? '🟢 待命區' : player.status}</div>
+                `;
+                studentListDiv.appendChild(card);
+            });
+        });
+    </script>
+</body>
+</html>

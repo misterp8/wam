@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生端 - 模組化打地鼠</title>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --surface-color: #1f2833;
+            --primary-color: #66fcf1;
+            --text-main: #c5c6c7;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* 登入視窗 (Modal) */
+        #login-modal {
+            background-color: var(--surface-color);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(102, 252, 241, 0.2);
+            text-align: center;
+            width: 300px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        #login-modal h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            letter-spacing: 2px;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 12px;
+            margin: 20px 0;
+            border: none;
+            border-bottom: 2px solid var(--text-main);
+            background: transparent;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+            text-align: center;
+        }
+        input[type="text"]:focus {
+            border-bottom: 2px solid var(--primary-color);
+        }
+        button {
+            background: linear-gradient(45deg, #45a29e, var(--primary-color));
+            border: none;
+            border-radius: 30px;
+            padding: 12px 30px;
+            color: #0b0c10;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 252, 241, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 252, 241, 0.5);
+        }
+        /* 等候大廳 */
+        #lobby-screen {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.8s ease forwards;
+        }
+        .pulse-text {
+            font-size: 24px;
+            color: var(--primary-color);
+            animation: pulse 1.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { text-shadow: 0 0 5px var(--primary-color); opacity: 0.8; }
+            to { text-shadow: 0 0 20px var(--primary-color); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-modal">
+        <h2>連線至教室</h2>
+        <input type="text" id="player-name" placeholder="輸入你的暱稱" autocomplete="off" onkeypress="handleEnter(event)">
+        <br>
+        <button onclick="joinGame()">進入大廳</button>
+    </div>
+
+    <div id="lobby-screen">
+        <h1 id="welcome-text"></h1>
+        <p class="pulse-text">⏳ 正在等待老師呼叫上台...</p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const loginModal = document.getElementById('login-modal');
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const nameInput = document.getElementById('player-name');
+        const welcomeText = document.getElementById('welcome-text');
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') joinGame();
+        }
+
+        function joinGame() {
+            const name = nameInput.value.trim();
+            if (name) {
+                socket.emit('student:login', name);
+            } else {
+                // 簡單的視覺回饋代替 alert
+                nameInput.style.borderBottom = "2px solid #ff4b4b";
+                setTimeout(() => nameInput.style.borderBottom = "2px solid #c5c6c7", 1000);
+            }
+        }
+
+        // 登入成功，切換畫面
+        socket.on('student:loginSuccess', (playerData) => {
+            loginModal.style.display = 'none';
+            lobbyScreen.style.display = 'block';
+            welcomeText.innerText = `歡迎，${playerData.name}！`;
+        });
+    </script>
+</body>
+</html>
