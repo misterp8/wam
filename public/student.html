@@ -2,13 +2,14 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>學生端 - 模組化打地鼠</title>
     <style>
         :root {
             --bg-color: #0b0c10;
             --surface-color: #1f2833;
             --primary-color: #66fcf1;
+            --hit-color: #ff4757;
             --text-main: #c5c6c7;
         }
         body {
@@ -22,73 +23,119 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
+            /* 預防連點時反白文字 */
+            user-select: none; 
+            -webkit-user-select: none;
         }
-        /* 登入視窗 (Modal) */
-        #login-modal {
+        
+        /* --- Phase 1: 登入與大廳樣式 --- */
+        #login-modal, #lobby-screen {
             background-color: var(--surface-color);
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(102, 252, 241, 0.2);
             text-align: center;
             width: 300px;
-            transition: opacity 0.4s ease, transform 0.4s ease;
         }
-        #login-modal h2 {
-            color: var(--primary-color);
-            margin-top: 0;
-            letter-spacing: 2px;
-        }
+        #lobby-screen { display: none; }
+        #login-modal h2 { color: var(--primary-color); margin-top: 0; }
         input[type="text"] {
-            width: 80%;
-            padding: 12px;
-            margin: 20px 0;
-            border: none;
-            border-bottom: 2px solid var(--text-main);
-            background: transparent;
-            color: white;
-            font-size: 16px;
-            outline: none;
-            transition: border-color 0.3s;
-            text-align: center;
+            width: 80%; padding: 12px; margin: 20px 0; border: none;
+            border-bottom: 2px solid var(--text-main); background: transparent;
+            color: white; font-size: 16px; outline: none; text-align: center;
         }
-        input[type="text"]:focus {
-            border-bottom: 2px solid var(--primary-color);
-        }
+        input[type="text"]:focus { border-bottom: 2px solid var(--primary-color); }
         button {
             background: linear-gradient(45deg, #45a29e, var(--primary-color));
-            border: none;
-            border-radius: 30px;
-            padding: 12px 30px;
-            color: #0b0c10;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(102, 252, 241, 0.3);
-            transition: transform 0.2s, box-shadow 0.2s;
+            border: none; border-radius: 30px; padding: 12px 30px;
+            color: #0b0c10; font-size: 16px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 252, 241, 0.3); transition: transform 0.2s;
         }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 252, 241, 0.5);
-        }
-        /* 等候大廳 */
-        #lobby-screen {
+        button:hover { transform: translateY(-2px); }
+        
+        /* Phase 2: 臨時測試按鈕 */
+        .test-btn { background: #444; color: white; margin-top: 15px; font-size: 12px; padding: 8px 15px; box-shadow: none; }
+
+        /* --- Phase 2: 遊戲畫面樣式 (RWD) --- */
+        #game-screen {
             display: none;
-            text-align: center;
-            animation: fadeIn 0.8s ease forwards;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 5vh;
         }
-        .pulse-text {
-            font-size: 24px;
-            color: var(--primary-color);
-            animation: pulse 1.5s infinite alternate;
+
+        /* 記分板 HUD */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 90vw;
+            max-width: 600px;
+            background: rgba(31, 40, 51, 0.8);
+            border: 2px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 15px 30px;
+            box-sizing: border-box;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 30px;
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.2);
         }
-        @keyframes pulse {
-            from { text-shadow: 0 0 5px var(--primary-color); opacity: 0.8; }
-            to { text-shadow: 0 0 20px var(--primary-color); opacity: 1; }
+        .score-text { color: var(--primary-color); }
+        .time-text { color: #ffeb3b; }
+
+        /* 九宮格棋盤 - RWD 核心設定 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 90vw;
+            max-width: 500px; /* 電腦版最大限制 */
+            aspect-ratio: 1 / 1; /* 強制正方形 */
+            margin: 0 auto;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+
+        /* 洞穴 (背景) */
+        .hole {
+            background-color: #111; /* 之後可替換成洞穴 PNG */
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.8), 0 0 5px rgba(102,252,241,0.3);
+            border: 2px solid #222;
         }
+
+        /* 地鼠 (目標) */
+        .mole {
+            width: 70%;
+            height: 70%;
+            background-color: var(--primary-color); /* 之後可替換成地鼠 PNG */
+            border-radius: 50%;
+            position: absolute;
+            bottom: -100%; /* 預設隱藏在洞穴下方 */
+            left: 15%;
+            transition: bottom 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.1s;
+            cursor: crosshair; /* 之後可換成槌子 url('hammer.png') */
+            /* 讓偽元素(眼睛)也跟著動，這裡做個簡單的科技感造型暫代 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+        }
+        /* 地鼠彈出 */
+        .mole.up {
+            bottom: 15%;
+        }
+        /* 地鼠被打中 */
+        .mole.hit {
+            background-color: var(--hit-color);
+            bottom: -10%; /* 微微往縮 */
+            transition: bottom 0.1s, background-color 0.1s;
+        }
+
     </style>
 </head>
 <body>
@@ -102,23 +149,55 @@
 
     <div id="lobby-screen">
         <h1 id="welcome-text"></h1>
-        <p class="pulse-text">⏳ 正在等待老師呼叫上台...</p>
+        <p style="color: var(--primary-color); margin-bottom: 20px;">⏳ 正在等待老師呼叫上台...</p>
+        <button class="test-btn" onclick="startLocalGameTest()">[開發測試] 單機試玩</button>
+    </div>
+
+    <div id="game-screen">
+        <div class="hud">
+            <div>分數: <span id="score-display" class="score-text">0</span></div>
+            <div>時間: <span id="time-display" class="time-text">30</span>s</div>
+        </div>
+        
+        <div class="grid-container">
+            <div class="hole"><div class="mole" data-index="0">👾</div></div>
+            <div class="hole"><div class="mole" data-index="1">👾</div></div>
+            <div class="hole"><div class="mole" data-index="2">👾</div></div>
+            <div class="hole"><div class="mole" data-index="3">👾</div></div>
+            <div class="hole"><div class="mole" data-index="4">👾</div></div>
+            <div class="hole"><div class="mole" data-index="5">👾</div></div>
+            <div class="hole"><div class="mole" data-index="6">👾</div></div>
+            <div class="hole"><div class="mole" data-index="7">👾</div></div>
+            <div class="hole"><div class="mole" data-index="8">👾</div></div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // 加上 transports 設定，確保在 Render 的反向代理下能穩定連線
         const socket = io({ transports: ['websocket', 'polling'] });
         
+        // --- DOM 元素 ---
         const loginModal = document.getElementById('login-modal');
         const lobbyScreen = document.getElementById('lobby-screen');
+        const gameScreen = document.getElementById('game-screen');
         const nameInput = document.getElementById('player-name');
         const welcomeText = document.getElementById('welcome-text');
+        
+        const scoreDisplay = document.getElementById('score-display');
+        const timeDisplay = document.getElementById('time-display');
+        const moles = document.querySelectorAll('.mole');
 
-        function handleEnter(e) {
-            if (e.key === 'Enter') joinGame();
-        }
+        // --- 遊戲狀態變數 ---
+        let score = 0;
+        let timeLeft = 30;
+        let gameTimerId = null;
+        let moleTimerId = null;
+        let lastHoleIndex = -1;
+        let isPlaying = false;
 
+        // --- Phase 1: 登入邏輯 ---
+        function handleEnter(e) { if (e.key === 'Enter') joinGame(); }
+        
         function joinGame() {
             const name = nameInput.value.trim();
             if (name) {
@@ -134,6 +213,107 @@
             lobbyScreen.style.display = 'block';
             welcomeText.innerText = `歡迎，${playerData.name}！`;
         });
+
+        // --- Phase 2: 核心遊戲邏輯 ---
+
+        // 隨機選擇一個地鼠洞 (避免連續同一個)
+        function randomHole() {
+            const idx = Math.floor(Math.random() * moles.length);
+            if (idx === lastHoleIndex) return randomHole();
+            lastHoleIndex = idx;
+            return moles[idx];
+        }
+
+        // 彈出地鼠
+        function popUpMole() {
+            if (!isPlaying) return;
+            
+            const time = Math.random() * 600 + 400; // 停留時間：400ms ~ 1000ms
+            const mole = randomHole();
+            
+            // 移除可能殘留的狀態
+            mole.classList.remove('hit');
+            mole.innerText = '👾'; // 恢復正常圖案
+            mole.classList.add('up');
+            
+            setTimeout(() => {
+                mole.classList.remove('up');
+                if (isPlaying) {
+                    // 稍微延遲後再彈出下一個，製造節奏感
+                    moleTimerId = setTimeout(popUpMole, Math.random() * 400 + 200); 
+                }
+            }, time);
+        }
+
+        // 點擊打擊事件
+        function whack(e) {
+            if (!e.isTrusted || !isPlaying) return; // 避免程式模擬點擊作弊
+            if (this.classList.contains('hit')) return; // 已經打中過了就不算
+            
+            this.classList.add('hit');
+            this.innerText = '💥'; // 切換成爆炸或暈眩圖案
+            score += 10;
+            scoreDisplay.innerText = score;
+
+            // 打中後快速縮回
+            setTimeout(() => {
+                this.classList.remove('up');
+            }, 100);
+            
+            // TODO (Phase 3): 在這裡 emit 分數給伺服器，同步給老師看板
+            // socket.emit('student:scoreUpdate', score);
+        }
+
+        // 綁定點擊事件到所有地鼠
+        moles.forEach(mole => mole.addEventListener('mousedown', whack));
+        moles.forEach(mole => mole.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // 防止手機端雙擊放大
+            whack.call(mole, e);
+        }));
+
+        // 啟動遊戲 (目前是單機測試版)
+        function startLocalGameTest() {
+            // 初始化 UI
+            lobbyScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+            score = 0;
+            timeLeft = 30;
+            scoreDisplay.innerText = score;
+            timeDisplay.innerText = timeLeft;
+            isPlaying = true;
+
+            // 啟動地鼠循環
+            popUpMole();
+
+            // 啟動倒數計時器
+            gameTimerId = setInterval(() => {
+                timeLeft--;
+                timeDisplay.innerText = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // 遊戲結束結算
+        function endGame() {
+            isPlaying = false;
+            clearInterval(gameTimerId);
+            clearTimeout(moleTimerId);
+            
+            // 確保所有地鼠都縮回去
+            moles.forEach(m => m.classList.remove('up', 'hit'));
+            
+            // 延遲一下顯示結果，體驗比較好
+            setTimeout(() => {
+                alert(`時間到！你的最終分數是: ${score}`);
+                // 切回大廳
+                gameScreen.style.display = 'none';
+                lobbyScreen.style.display = 'block';
+            }, 500);
+        }
+
     </script>
 </body>
 </html>
